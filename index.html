@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Je débute la guitare électrique – Joue avec Bernard</title>
 <meta name="theme-color" content="#7a4a26">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Guitare Bernard">
 <style>
 :root{
   --bg:#f6efe4; --paper:#fffaf2; --ink:#2a2018; --muted:#7b6a5a; --line:#e3d5c2;
@@ -22,6 +26,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 .hero img{width:104px;height:106px;border-radius:16px;object-fit:cover;flex:none;border:3px solid rgba(255,255,255,.35)}
 .hero h1{margin:0;font-size:clamp(20px,4.4vw,30px);line-height:1.1;letter-spacing:.2px}
 .hero p{margin:6px 0 0;opacity:.92;font-size:15px}
+.inst{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.inst button{border:0;background:var(--accent);color:#fff;border-radius:999px;padding:10px 16px;font-size:15px;font-weight:700}
+.inst small{color:var(--muted);font-size:13px}
+.ioshelp{margin-top:8px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14.5px;line-height:1.45}
 .chap{margin-top:22px}
 .chap h2{font-size:16px;text-transform:uppercase;letter-spacing:.8px;color:var(--wood);margin:0 0 10px;display:flex;align-items:center;gap:8px}
 .chap h2 span{background:var(--wood);color:#fff;border-radius:999px;font-size:12px;padding:2px 9px;letter-spacing:0}
@@ -98,6 +106,8 @@ input[type=range]{accent-color:var(--accent);width:120px}
       <p>Joue chaque morceau avec Bernard&nbsp;: la batterie t'accompagne, le manche te montre où poser les doigts.</p>
     </div>
   </div>
+  <div class="inst hidden" id="inst"><button id="instb">📲 Installer l'appli</button><small id="offl"></small></div>
+  <div class="ioshelp hidden" id="ioshelp">Sur iPhone ou iPad : dans Safari, touche le bouton <b>Partager</b> (le carré avec une flèche vers le haut), puis <b>Sur l'écran d'accueil</b>. L'appli s'ouvrira ensuite comme les autres, même sans connexion.</div>
   <div id="chaps"></div>
   <div class="foot">Méthode de Mickael Le Van · conservatoire</div>
 </div>
@@ -473,6 +483,26 @@ chip('#tNeck','neck',()=>$('#neck').classList.toggle('hidden',!S.neck));
 document.addEventListener('keydown',e=>{if(e.code==='Space'&&!$('#player').classList.contains('hidden')){e.preventDefault();playing?stop():start(0)}});
 
 renderNeck();setBpm(S.bpm,false);route();
+
+/* ---------- appli installable et hors ligne ---------- */
+(function(){
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  let deferred=null;
+  const show=()=>{if(!standalone)$('#inst').classList.remove('hidden')};
+  addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;show()});
+  $('#instb').onclick=async()=>{
+    if(deferred){deferred.prompt();try{await deferred.userChoice}catch(e){}deferred=null;$('#inst').classList.add('hidden')}
+    else $('#ioshelp').classList.toggle('hidden');
+  };
+  addEventListener('appinstalled',()=>$('#inst').classList.add('hidden'));
+  if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
+    try{navigator.serviceWorker.register('sw.js').then(()=>{
+      $('#offl').textContent='✓ Fonctionne aussi hors connexion';
+      if(isIOS)show();
+    }).catch(()=>{})}catch(e){}
+  }
+})();
 </script>
 </body>
 </html>

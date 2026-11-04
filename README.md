@@ -12,6 +12,8 @@ Les 57 morceaux de la méthode sont jouables directement dans le navigateur :
 - la lecture en boucle, ou à partir de n'importe quelle mesure (toucher une note) ;
 - des consignes expliquées simplement avant chaque morceau et un récapitulatif à la fin de chaque chapitre.
 
-Tout tient dans le fichier `index.html`. Aucune donnée n'est envoyée : seuls les réglages et les morceaux déjà joués sont mémorisés dans le navigateur.
+L'appli s'installe sur téléphone, tablette ou ordinateur (bouton « Installer l'appli » sur la page d'accueil) et fonctionne ensuite hors connexion.
+
+Tout le contenu tient dans le fichier `index.html`. Aucune donnée n'est envoyée : seuls les réglages et les morceaux déjà joués sont mémorisés dans le navigateur.
 
 © Mickael Le Van – tous droits réservés.
