@@ -425,7 +425,8 @@ function renderInfo(p){
   const I=p.info||{items:[],recap:[],new:[]};
   const box=$('#info');box.classList.toggle('hidden',!I.items.length);
   $('#infoimg').src=DATA.bernard;
-  let h=I.items.map(([a,b])=>`<p><b>${esc(a)} :</b> ${esc(b)}</p>`).join('');
+  const hand=s=>{s=s.replace(/ \(si je suis droitier\)/g,'');if(S.left)s=s.replace(/main gauche/g,'\u0001').replace(/main droite/g,'main gauche').replace(/\u0001/g,'main droite');return s};
+  let h=I.items.map(([a,b])=>`<p><b>${esc(hand(a))} :</b> ${esc(hand(b))}</p>`).join('');
   if(I.new.length){h+=`<div class="newn"><span>Voir sur le manche :</span>`+I.new.map((f,k)=>`<button data-k="${k}">${esc(f[2])}</button>`).join('')+(I.new.length>1?`<button data-k="all">Toutes</button>`:'')+`</div>`}
   $('#infotxt').innerHTML=h;
   $('#infotxt').querySelectorAll('.newn button').forEach(b=>b.onclick=()=>{
@@ -467,7 +468,7 @@ document.querySelectorAll('#presets button').forEach(b=>b.onclick=()=>setBpm(+b.
 function chip(id,key,after){const b=$(id);const upd=()=>b.classList.toggle('on',S[key]);upd();
   b.onclick=()=>{S[key]=!S[key];store.set(key,S[key]);upd();after&&after()}}
 chip('#tMel','mel');{const b=$('#tLeft');const upd=()=>{b.textContent=S.left?'🤚 Gaucher':'✋ Droitier';b.classList.add('on')};upd();
- b.onclick=()=>{S.left=!S.left;store.set('left',S.left);upd();renderNeck();if(lastShown)showNeck(lastShown[0],lastShown[1])}}chip('#tDrum','drum');chip('#tLoop','loop');
+ b.onclick=()=>{S.left=!S.left;store.set('left',S.left);upd();renderNeck();if(cur)renderInfo(cur);if(lastShown)showNeck(lastShown[0],lastShown[1])}}chip('#tDrum','drum');chip('#tLoop','loop');
 chip('#tNeck','neck',()=>$('#neck').classList.toggle('hidden',!S.neck));
 document.addEventListener('keydown',e=>{if(e.code==='Space'&&!$('#player').classList.contains('hidden')){e.preventDefault();playing?stop():start(0)}});
 
