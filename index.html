@@ -71,6 +71,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 .seg button.sel{background:var(--wood);color:#fff}
 .bpm{font-variant-numeric:tabular-nums;font-weight:700;font-size:14px}
 input[type=range]{accent-color:var(--accent);width:120px}
+.fine{display:inline-flex;align-items:center;gap:6px}
+.fine button{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:#fff;font-size:20px;line-height:1;font-weight:700;display:grid;place-items:center;padding:0;touch-action:manipulation}
+.fine button:active{background:#fde6d3}
 .tg{display:flex;gap:6px;flex-wrap:wrap}
 .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:14px;display:flex;gap:6px;align-items:center}
 .chip.on{background:#fde6d3;border-color:var(--accent2)}
@@ -136,7 +139,7 @@ input[type=range]{accent-color:var(--accent);width:120px}
       <div class="seg" id="presets">
         <button data-b="60">Lent</button><button data-b="90">Moyen</button><button data-b="130">Rapide</button>
       </div>
-      <input type="range" id="bpm" min="40" max="140" step="2" aria-label="Tempo">
+      <span class="fine"><button id="bpmMinus" aria-label="Ralentir d'un cran">−</button><input type="range" id="bpm" min="40" max="140" step="1" aria-label="Tempo"><button id="bpmPlus" aria-label="Accélérer d'un cran">+</button></span>
       <span class="bpm" id="bpmv"></span>
     </div>
     <div class="tg">
@@ -734,6 +737,8 @@ function setBpm(v,restart){S.bpm=v;store.set('bpm',v);$('#bpm').value=v;$('#bpmv
   if(restart&&playing)start(loopState?loopState.fromSeq:0)}
 $('#bpm').oninput=e=>setBpm(+e.target.value,false);
 $('#bpm').onchange=e=>setBpm(+e.target.value,true);
+{let rt=null;const nudge=d=>{const v=Math.max(40,Math.min(140,S.bpm+d));if(v===S.bpm)return;setBpm(v,false);clearTimeout(rt);rt=setTimeout(()=>{if(playing)start(loopState?loopState.fromSeq:0)},600)};
+ $('#bpmMinus').onclick=()=>nudge(-1);$('#bpmPlus').onclick=()=>nudge(1);}
 document.querySelectorAll('#presets button').forEach(b=>b.onclick=()=>setBpm(+b.dataset.b,true));
 function chip(id,key,after){const b=$(id);const upd=()=>b.classList.toggle('on',S[key]);upd();
   b.onclick=()=>{S[key]=!S[key];store.set(key,S[key]);upd();after&&after()}}
