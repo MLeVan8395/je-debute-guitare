@@ -147,6 +147,7 @@ input[type=range]{accent-color:var(--accent);width:120px}
       <button class="chip" id="tDrum">🥁 Batterie</button>
       <button class="chip" id="tBass">🎵 Basse</button>
       <button class="chip" id="tChords">🎹 Accords</button>
+      <button class="chip" id="tMetro">⏱ Métronome</button>
       <button class="chip" id="tNeck">🎯 Manche</button>
       <button class="chip" id="tLoop">🔁 En boucle</button>
       <button class="chip" id="tLeft" title="Retourne le schéma du manche">✋ Droitier</button>
@@ -183,7 +184,7 @@ const DATA={"samples":{"acoustique/caisse-claire":"SUQzBAAAAAAAI1RTU0UAAAAPAAADT
 const $=s=>document.querySelector(s);
 const store={get(k,d){try{const v=localStorage.getItem('bernard:'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
              set(k,v){try{localStorage.setItem('bernard:'+k,JSON.stringify(v))}catch(e){}}};
-const S={bpm:store.get('bpm',60),mel:store.get('mel',true),drum:store.get('drum',true),neck:store.get('neck',true),loop:store.get('loop',false),bass:store.get('bass',true),chords:store.get('chords',true),left:store.get('left',false)};
+const S={bpm:store.get('bpm',60),mel:store.get('mel',true),drum:store.get('drum',true),neck:store.get('neck',true),loop:store.get('loop',false),bass:store.get('bass',true),metro:store.get('metro',false),chords:store.get('chords',true),left:store.get('left',false)};
 let done=new Set(store.get('done',[]));
 $('#bern').src=DATA.bernard;
 
@@ -337,6 +338,8 @@ function snare(t,v=1){noise(t,'highpass',1300,.16,.42*v);const o=ac.createOscill
 function hat(t,v=1,open){noise(t,'highpass',7500,open?.22:.045,.2*v)}
 function ride(t,v=1){noise(t,'bandpass',6200,.3,.16*v);noise(t,'highpass',9000,.12,.08*v)}
 function crash(t){noise(t,'highpass',4500,1.1,.25)}
+function metroClick(t,acc){const o=ac.createOscillator(),g=ac.createGain(),f=ac.createBiquadFilter();o.type='triangle';o.frequency.value=acc?1750:1150;f.type='bandpass';f.frequency.value=acc?1750:1150;f.Q.value=3;
+  g.gain.setValueAtTime(acc?.5:.32,t);g.gain.exponentialRampToValueAtTime(.001,t+.05);o.connect(f);f.connect(g);g.connect(master);o.start(t);o.stop(t+.06)}
 function stick(t,acc){const o=ac.createOscillator(),g=ac.createGain();o.type='square';o.frequency.value=acc?1900:1400;
   g.gain.setValueAtTime(.22,t);g.gain.exponentialRampToValueAtTime(.001,t+.035);o.connect(g);g.connect(master);o.start(t);o.stop(t+.04)}
 
@@ -550,6 +553,11 @@ function schedulePass(L){
     visual.push({time:tt,i:n.i,nx:nx?nx.i:-1});
     if(!n.e.rest&&!n.silent)queue.push({time:tt,f:()=>{if(S.mel){const ch=n.e.midi.length>2;const a=n.t+pass.startBeat,dd=(swingT(p,a+(n.sound||n.d))-swingT(p,a))*spq;const sv=p.sw&&n.d<1?(offbeat(p,a)?1.2:.9):1;n.e.midi.forEach((m,j)=>pluck(tt+(ch?j*.022:0),m,dd,(n.e.ac?1.25:1)*(ch?.55:1)*sv,n.e.mute))}}});
   });
+  // métronome : un clic par temps, aligné sur les barres de mesure
+  {const U=beatUnit(p),M=measLen(p),a0=pass.startBeat,a1=pass.startBeat+pass.len;
+   let b=a0+((((p.pk-a0)%U)+U)%U);if(b-a0>=U-1e-6)b-=U;
+   for(;b<a1-1e-6;b+=U){const tt=t0+(b-a0)*spq,acc=Math.abs(((((b-p.pk)%M)+M)%M))<1e-6||Math.abs(((((b-p.pk)%M)+M)%M)-M)<1e-6;
+     queue.push({time:tt,f:()=>{if(S.metro)metroClick(tt,acc)}})}}
   // accompagnement mesure par mesure
   const toTime=b=>t0+(swingT(p,b)-swingT(p,pass.startBeat))*spq;
   const end=pass.len, bars=[];
@@ -647,7 +655,7 @@ async function renderTrack(p,bpm,mode){
     let O=((p.pk-pass.startBeat)%M+M)%M; if(O<1e-6)O=0;
     const cStart=O>0?O-2*M:-M, t0=LEAD-cStart*spq, dur=t0+pass.len*spq+3;
     ac=new OfflineAudioContext(1,Math.ceil(SR_OUT*dur),SR_OUT); buildGraph();
-    Object.assign(S,{mel:mode==='guide',drum:mode!=='guide',bass:mode!=='guide',chords:mode!=='guide',loop:false});
+    Object.assign(S,{mel:mode==='guide',drum:mode!=='guide',bass:mode!=='guide',chords:mode!=='guide',metro:false,loop:false});
     queue=[];visual=[];lastVoice=null;openHat=null;
     if(mode!=='guide')for(let b=cStart;b<-1e-6;b+=U){const n=Math.round((((b-O)%M)+M)%M/U)+1;stick(t0+b*spq,n===1)}
     schedulePass({p,spq,M,U,O,t0,pass});
@@ -742,7 +750,7 @@ $('#bpm').onchange=e=>setBpm(+e.target.value,true);
 document.querySelectorAll('#presets button').forEach(b=>b.onclick=()=>setBpm(+b.dataset.b,true));
 function chip(id,key,after){const b=$(id);const upd=()=>b.classList.toggle('on',S[key]);upd();
   b.onclick=()=>{S[key]=!S[key];store.set(key,S[key]);upd();after&&after()}}
-chip('#tMel','mel');chip('#tBass','bass');chip('#tChords','chords');{const b=$('#tLeft');const upd=()=>{b.textContent=S.left?'🤚 Gaucher':'✋ Droitier';b.classList.add('on')};upd();
+chip('#tMel','mel');chip('#tBass','bass');chip('#tChords','chords');chip('#tMetro','metro');{const b=$('#tLeft');const upd=()=>{b.textContent=S.left?'🤚 Gaucher':'✋ Droitier';b.classList.add('on')};upd();
  b.onclick=()=>{S.left=!S.left;store.set('left',S.left);upd();renderNeck();if(cur)renderInfo(cur);if(lastShown)showNeck(lastShown[0],lastShown[1])}}chip('#tDrum','drum');chip('#tLoop','loop');
 chip('#tNeck','neck',()=>$('#neck').classList.toggle('hidden',!S.neck));
 document.addEventListener('keydown',e=>{if(e.code==='Space'&&!$('#player').classList.contains('hidden')){e.preventDefault();playing?stop():start(0)}});
